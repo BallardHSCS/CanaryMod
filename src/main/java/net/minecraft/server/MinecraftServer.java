@@ -10,6 +10,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.GameProfileRepository;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
+import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationServiceModified;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
@@ -174,10 +175,11 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
         this.Z = new PlayerProfileCache(this, file2);
         this.p = this.h();
         this.l = new AnvilSaveConverter(file1, DimensionType.NORMAL);
-        this.V = new YggdrasilAuthenticationService(proxy, UUID.randomUUID().toString());
-        this.W = this.V.createMinecraftSessionService();
+        // CanaryMod: Use Modified Session Service for IP verification checks (if enabled)
+        this.V = new YggdrasilAuthenticationServiceModified(proxy, UUID.randomUUID().toString());
+        this.W = ((YggdrasilAuthenticationServiceModified) this.V).createModifiedMinecraftSessionService();
+        //
         this.Y = this.V.createProfileRepository();
-
         // CanaryMod
         this.server = new CanaryServer(this);
         Canary.setServer(server);
@@ -601,7 +603,8 @@ public abstract class MinecraftServer implements ICommandSender, Runnable, IPlay
             this.r.b().a(agameprofile);
         }
 
-        if (this.y % 900 == 0) {
+        // if (this.y % 900 == 0) { // CanaryMod: use world auto-save interval from config
+        if (this.y % Configuration.getServerConfig().getWorldAutoSaveInterval() == 0) {
             this.b.a("save");
             this.v.k();
             this.a(true);

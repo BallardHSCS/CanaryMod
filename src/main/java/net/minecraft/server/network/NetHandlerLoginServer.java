@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.exceptions.AuthenticationUnavailableException;
 import com.mojang.authlib.properties.Property;
+import com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionServiceModified;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -27,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.crypto.SecretKey;
 import java.math.BigInteger;
+import java.net.InetSocketAddress;
 import java.security.PrivateKey;
 import java.util.Arrays;
 import java.util.Random;
@@ -140,8 +142,11 @@ public class NetHandlerLoginServer implements INetHandlerLoginServer, IUpdatePla
                     GameProfile gameprofile = NetHandlerLoginServer.this.i;
                     try {
                         String s0 = (new BigInteger(CryptManager.a(NetHandlerLoginServer.this.j, NetHandlerLoginServer.this.f.P().getPublic(), NetHandlerLoginServer.this.k))).toString(16);
-
-                        NetHandlerLoginServer.this.i = NetHandlerLoginServer.this.f.aB().hasJoinedServer(new GameProfile((UUID)null, gameprofile.getName()), s0);
+                        // CanaryMod: Pull user ip and add it to the session checks
+                        String userIP = ((InetSocketAddress) NetHandlerLoginServer.this.a.b()).getAddress().getHostAddress();
+                        // CanaryMod: Pass IP for possible session IP verification
+                        NetHandlerLoginServer.this.i = ((YggdrasilMinecraftSessionServiceModified)NetHandlerLoginServer.this.f.aB()).hasJoinedServerVerifyIP(new GameProfile((UUID)null, gameprofile.getName()), s0, userIP);
+                        //
                         if (NetHandlerLoginServer.this.i != null) {
                             NetHandlerLoginServer.c.info("UUID of player " + NetHandlerLoginServer.this.i.getName() + " is " + NetHandlerLoginServer.this.i.getId());
                             NetHandlerLoginServer.this.g = NetHandlerLoginServer.LoginState.READY_TO_ACCEPT;
@@ -153,7 +158,7 @@ public class NetHandlerLoginServer implements INetHandlerLoginServer, IUpdatePla
                         }
                         else {
                             NetHandlerLoginServer.this.a("Failed to verify username!");
-                            NetHandlerLoginServer.c.error("Username \'" + NetHandlerLoginServer.this.i.getName() + "\' tried to join with an invalid session");
+                            NetHandlerLoginServer.c.error("Username \'" + /* NetHandlerLoginServer.this.i.getName() CanaryMod: Would this not be null?*/ gameprofile.getName() + "\' tried to join with an invalid session");
                         }
                     }
                     catch (AuthenticationUnavailableException authenticationunavailableexception) {
